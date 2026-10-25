@@ -16,36 +16,28 @@
      ========================================================= -->
 <script>
   window.EZ_CONFIG = {
-    GA4_ID:     "G-XXXXXXXXXX",   // Google Analytics 4 → Адміністрування → Потоки даних → Measurement ID
-    CLARITY_ID: "xxxxxxxxxx",     // Microsoft Clarity → Settings → Overview → Project ID
+    GA4_ID:     "G-9CJJV4KR6F",   // Google Analytics 4 (потік «EZNMT website»)
+    CLARITY_ID: "z37u08ed3h",     // Microsoft Clarity, проєкт EZNMT
     FORM_URL:   "https://docs.google.com/forms/d/e/1FAIpQLSfIiE-wOjngBzNqA4s97y8Nv4kDTsr_TJ8lru7B5PtlXrJ9jA/viewform",
     FORM_SOURCE_ENTRY: "entry.1086358434"  // поле «Джерело» у Google Form
   };
 </script>
 
-<!-- Google Analytics 4 (вантажиться лише якщо ID заповнено) -->
+<!-- Google tag (gtag.js) — стандартний код GA4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9CJJV4KR6F"></script>
 <script>
-  (function () {
-    var id = window.EZ_CONFIG.GA4_ID;
-    window.dataLayer = window.dataLayer || [];
-    window.gtag = function () { dataLayer.push(arguments); };
-    if (!id || id.indexOf("XXXX") !== -1) return;
-    var s = document.createElement("script");
-    s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=" + id;
-    document.head.appendChild(s);
-    gtag("js", new Date());
-    gtag("config", id);
-  })();
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-9CJJV4KR6F');
 </script>
-<!-- Microsoft Clarity (теплові карти й записи сесій) -->
-<script>
-  (function () {
-    var id = window.EZ_CONFIG.CLARITY_ID;
-    if (!id || id === "xxxxxxxxxx") return;
-    (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script",id);
-  })();
+<!-- Microsoft Clarity (теплові карти й записи сесій) — стандартний код -->
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "z37u08ed3h");
 </script>
 
 <style>
