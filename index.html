@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EZNMT — розбір кожної помилки в тестах НМТ</title>
+<meta name="description" content="Мобільний тренажер для підготовки до НМТ: пояснює, чому саме твоя відповідь неправильна, і показує карту слабких тем. 10 хвилин на день.">
+<meta property="og:title" content="EZNMT — не просто хрестик, а пояснення">
+<meta property="og:description" content="Тренажер НМТ, який пояснює кожну твою помилку простою мовою. Долучайся до бета-тесту.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Golos+Text:wght@400;500;600;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- =========================================================
+     НАЛАШТУВАННЯ (заміни 3 значення нижче перед публікацією)
+     ========================================================= -->
+<script>
+  window.EZ_CONFIG = {
+    GA4_ID:     "G-XXXXXXXXXX",   // Google Analytics 4 → Адміністрування → Потоки даних → Measurement ID
+    CLARITY_ID: "xxxxxxxxxx",     // Microsoft Clarity → Settings → Overview → Project ID
+    FORM_URL:   "https://docs.google.com/forms/d/e/1FAIpQLSfIiE-wOjngBzNqA4s97y8Nv4kDTsr_TJ8lru7B5PtlXrJ9jA/viewform",
+    FORM_SOURCE_ENTRY: "entry.1086358434"  // поле «Джерело» у Google Form
+  };
+</script>
+
+<!-- Google Analytics 4 (вантажиться лише якщо ID заповнено) -->
+<script>
+  (function () {
+    var id = window.EZ_CONFIG.GA4_ID;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { dataLayer.push(arguments); };
+    if (!id || id.indexOf("XXXX") !== -1) return;
+    var s = document.createElement("script");
+    s.async = true; s.src = "https://www.googletagmanager.com/gtag/js?id=" + id;
+    document.head.appendChild(s);
+    gtag("js", new Date());
+    gtag("config", id);
+  })();
+</script>
+<!-- Microsoft Clarity (теплові карти й записи сесій) -->
+<script>
+  (function () {
+    var id = window.EZ_CONFIG.CLARITY_ID;
+    if (!id || id === "xxxxxxxxxx") return;
+    (function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);})(window,document,"clarity","script",id);
+  })();
+</script>
+
+<style>
+  :root{
+    --paper:#FBFCFE;
+    --grid:#DDE7F6;
+    --ink:#1F3A93;       /* синя кулькова ручка */
+    --ink-soft:#E8EEFB;
+    --red:#D7263D;       /* червона ручка вчителя */
+    --red-soft:#FCE9EC;
+    --green:#1E8E5A;
+    --green-soft:#E3F4EB;
+    --marker:#FFE45C;    /* жовтий маркер */
+    --text:#1B1F2A;
+    --muted:#5A6275;
+    --line:#C9D3E6;
+    --radius-s:6px;
+    --radius-l:14px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+  body{
+    margin:0;color:var(--text);
+    font:400 17px/1.6 "Golos Text",system-ui,sans-serif;
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px,transparent 1px),
+      linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:24px 24px;
+  }
+  a{color:var(--ink)}
+  :focus-visible{outline:3px solid var(--ink);outline-offset:3px;border-radius:4px}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 16px}
+  .narrow{max-width:680px}
+
+  header.top{display:flex;justify-content:space-between;align-items:center;padding:18px 0}
+  .logo{font:800 22px/1 "Unbounded",sans-serif;color:var(--ink);text-decoration:none;letter-spacing:-.5px}
+  .logo span{color:var(--red)}
+  .top a.small{font-weight:600;font-size:15px;text-decoration:none}
+
+  /* HERO */
+  .hero{display:grid;gap:28px;padding:20px 0 56px}
+  @media(min-width:900px){.hero{grid-template-columns:1.05fr 1fr;align-items:start;padding-top:36px}}
+  h1{font:800 clamp(30px,5.6vw,52px)/1.08 "Unbounded",sans-serif;margin:0 0 18px;letter-spacing:-1px}
+  .hero p.lead{font-size:19px;color:var(--muted);margin:0 0 26px;max-width:34em}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;cursor:pointer;
+       font:600 17px/1 "Golos Text",sans-serif;padding:16px 22px;border-radius:var(--radius-s);text-decoration:none}
+  .btn-main{background:var(--ink);color:#fff;box-shadow:0 3px 0 #13265f}
+  .btn-main:hover{background:#18307c}
+  .btn-ghost{background:transparent;color:var(--ink);border:2px solid var(--ink)}
+  .hero .note{font-size:14px;color:var(--muted);margin-top:12px}
+
+  /* DEMO — головна "фішка" сторінки */
+  .sheet{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius-l);padding:22px 20px 18px;position:relative}
+  .sheet .q-meta{font-size:14px;color:var(--muted);margin-bottom:6px}
+  .sheet .q{font-size:19px;font-weight:600;margin:0 0 16px}
+  .sheet .q sup{font-size:.7em}
+  .bubbles{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:6px}
+  .bubble{border:2px solid var(--line);background:#fff;border-radius:var(--radius-s);padding:8px 0 10px;cursor:pointer;
+          text-align:center;font:inherit;color:var(--text)}
+  .bubble b{display:block;font:700 15px/1.2 "Unbounded",sans-serif;color:var(--muted)}
+  .bubble span{display:block;font-size:20px;font-weight:600;margin-top:2px}
+  .bubble:hover{border-color:var(--ink)}
+  .bubble.picked-wrong{border-color:var(--red);background:var(--red-soft);position:relative}
+  .bubble.picked-wrong::after{content:"✕";position:absolute;top:-12px;right:-6px;font:700 30px/1 "Caveat",cursive;color:var(--red)}
+  .bubble.is-right{border-color:var(--green);background:var(--green-soft)}
+  .bubble[disabled]{cursor:default}
+  .demo-hint{font-size:14px;color:var(--muted);margin:10px 0 0}
+  .verdict{margin-top:16px;display:none}
+  .verdict.show{display:block}
+  .verdict .old{display:flex;gap:10px;align-items:center;font-size:15px;color:var(--muted);padding:10px 12px;border:1px dashed var(--line);border-radius:var(--radius-s)}
+  .verdict .old .x{color:var(--red);font:700 26px/1 "Caveat",cursive}
+  .verdict .why-btn{margin-top:12px;width:100%}
+  .explain{display:none;margin-top:14px;border-left:4px solid var(--red);background:#fff;padding:4px 0 4px 14px}
+  .explain.show{display:block}
+  .explain .tag{font:700 22px/1.1 "Caveat",cursive;color:var(--red);margin:0 0 6px}
+  .explain p{margin:0 0 10px}
+  .explain ol{margin:0 0 10px;padding-left:22px}
+  .explain .rule{background:linear-gradient(transparent 55%,var(--marker) 55%);font-weight:600}
+  .nw{white-space:nowrap}
+  .explain .topic{font-size:14px;color:var(--muted)}
+  .simpler{display:none;margin-top:10px;background:var(--ink-soft);border-radius:var(--radius-s);padding:12px 14px}
+  .simpler.show{display:block}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font:500 15px "Golos Text",sans-serif;cursor:pointer;color:var(--text)}
+  .chip:hover{border-color:var(--ink)}
+  .chip.chosen{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .thanks{font-size:15px;color:var(--green);margin-top:8px;display:none}
+  .reset{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:14px;margin-top:12px;padding:0}
+
+  /* SECTIONS */
+  section.block{padding:56px 0;border-top:1px solid var(--line)}
+  h2{font:700 clamp(24px,3.6vw,34px)/1.15 "Unbounded",sans-serif;margin:0 0 14px;letter-spacing:-.5px}
+  .sub{color:var(--muted);margin:0 0 28px;max-width:38em}
+
+  .pains{display:grid;gap:14px}
+  @media(min-width:760px){.pains{grid-template-columns:repeat(3,1fr)}}
+  .pain{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius-s);padding:18px}
+  .pain .say{font:700 24px/1.15 "Caveat",cursive;color:var(--ink);margin:0 0 8px}
+  .pain p{margin:0;color:var(--muted);font-size:16px}
+
+  .split{display:grid;gap:28px}
+  @media(min-width:860px){.split{grid-template-columns:1fr 1fr;align-items:center}}
+  .heat{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius-l);padding:18px}
+  .heat h3{font:600 16px "Golos Text",sans-serif;margin:0 0 4px}
+  .heat .mock{font-size:13px;color:var(--muted);margin:0 0 12px}
+  .cells{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+  .cell{display:flex;justify-content:space-between;gap:8px;padding:9px 10px;border-radius:var(--radius-s);font-size:14px}
+  .cell.g{background:var(--green-soft)} .cell.y{background:#FFF6CC} .cell.r{background:var(--red-soft)}
+  .cell b{font-weight:700}
+  .legend{display:flex;gap:14px;font-size:13px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:middle}
+  .benefits{list-style:none;padding:0;margin:0;display:grid;gap:16px}
+  .benefits li{padding-left:34px;position:relative}
+  .benefits li::before{content:"✓";position:absolute;left:0;top:-2px;font:700 26px/1 "Caveat",cursive;color:var(--green)}
+  .benefits strong{display:block;font-size:18px}
+
+  .trust{display:grid;gap:14px}
+  @media(min-width:760px){.trust{grid-template-columns:repeat(3,1fr)}}
+  .trust div{border-top:3px solid var(--ink);padding-top:12px}
+  .trust strong{display:block;margin-bottom:4px}
+  .trust p{margin:0;color:var(--muted);font-size:16px}
+
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:18px}
+  @media(min-width:860px){.steps{grid-template-columns:repeat(4,1fr)}}
+  .steps li{counter-increment:s;position:relative;padding-top:44px}
+  .steps li::before{content:counter(s);position:absolute;top:0;left:0;width:34px;height:34px;border-radius:50%;
+       border:2px solid var(--ink);color:var(--ink);font:700 16px/30px "Unbounded",sans-serif;text-align:center;background:#fff}
+  .steps strong{display:block;margin-bottom:4px}
+  .steps p{margin:0;color:var(--muted);font-size:16px}
+
+  .plans{display:grid;gap:14px}
+  @media(min-width:860px){.plans{grid-template-columns:repeat(3,1fr)}}
+  .plan{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius-l);padding:22px;display:flex;flex-direction:column}
+  .plan.best{border:2.5px solid var(--ink)}
+  .plan h3{font:700 18px "Unbounded",sans-serif;margin:0 0 6px}
+  .plan .price{font:800 32px/1.1 "Unbounded",sans-serif;margin:6px 0 2px}
+  .plan .per{color:var(--muted);font-size:15px;margin-bottom:14px}
+  .plan ul{padding-left:20px;margin:0 0 18px;flex:1}
+  .plan li{margin-bottom:6px;font-size:16px}
+  .plan .flag{font:700 20px/1 "Caveat",cursive;color:var(--red);margin-bottom:6px}
+
+  .cta-final{background:var(--ink);color:#fff;border-radius:var(--radius-l);padding:34px 22px;text-align:left}
+  .cta-final h2{color:#fff}
+  .cta-final p{color:#D7E0F7;max-width:36em}
+  .cta-final .btn-main{background:var(--marker);color:var(--text);box-shadow:0 3px 0 #c7ad1f}
+  .cta-final .btn-ghost{color:#fff;border-color:#fff}
+  .cta-final .what-next{font-size:15px;color:#D7E0F7;margin-top:14px}
+
+  details{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius-s);padding:0 16px;margin-bottom:10px}
+  summary{cursor:pointer;font-weight:600;padding:16px 0;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::after{content:"+";float:right;font-weight:700;color:var(--ink)}
+  details[open] summary::after{content:"–"}
+  details p{margin:0 0 16px;color:var(--muted)}
+
+  footer{padding:36px 0 48px;color:var(--muted);font-size:14px}
+
+  /* модалка fake door */
+  .modal{position:fixed;inset:0;background:rgba(27,31,42,.55);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+  .modal.show{display:flex}
+  .modal-box{background:#fff;border-radius:var(--radius-l);max-width:440px;width:100%;padding:24px}
+  .modal-box h3{font:700 20px/1.2 "Unbounded",sans-serif;margin:0 0 10px}
+  .modal-box p{margin:0 0 16px;color:var(--muted)}
+  .modal-box .row{margin-top:0}
+  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--text);color:#fff;padding:10px 16px;border-radius:var(--radius-s);font-size:15px;display:none;z-index:11}
+  .toast.show{display:block}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <a class="logo" href="#" aria-label="EZNMT">EZ<span>NMT</span></a>
+    <a class="small" href="#join" data-cta="header">Бета-тест</a>
+  </header>
+
+  <!-- 1. HERO + інтерактивне демо -->
+  <main>
+  <div class="hero">
+    <div>
+      <h1>Помилився в тесті? Дізнайся чому — за 3 секунди</h1>
+      <p class="lead">EZNMT — мобільний тренажер для підготовки до НМТ. Він пояснює, чому саме твій варіант неправильний, і будує карту твоїх слабких тем. 10 хвилин на день, з телефона.</p>
+      <a class="btn btn-main" href="#" data-cta="hero" data-form>Хочу в бета-тест</a>
+      <p class="note">Безкоштовно. Потрібен лише email — напишемо, коли відкриємо доступ.</p>
+    </div>
+
+    <div class="sheet" id="demo" aria-live="polite">
+      <div class="q-meta">Спробуй прямо тут · Математика · завдання з вибором відповіді</div>
+      <p class="q">Розв'яжіть рівняння 2<sup>x+1</sup> = 32.</p>
+      <div class="bubbles" role="group" aria-label="Варіанти відповіді">
+        <button class="bubble" data-opt="А" type="button"><b>А</b><span>3</span></button>
+        <button class="bubble" data-opt="Б" type="button"><b>Б</b><span>4</span></button>
+        <button class="bubble" data-opt="В" type="button"><b>В</b><span>5</span></button>
+        <button class="bubble" data-opt="Г" type="button"><b>Г</b><span>16</span></button>
+        <button class="bubble" data-opt="Д" type="button"><b>Д</b><span>31</span></button>
+      </div>
+      <p class="demo-hint" id="demoHint">Обери відповідь — навіть якщо не впевнений.</p>
+
+      <div class="verdict" id="verdict">
+        <div class="old" id="oldWay"><span class="x">✕</span><span>Так це виглядає на звичайному сайті з тестами: хрестик і правильна літера. Все.</span></div>
+        <button class="btn btn-main why-btn" type="button" id="whyBtn">Чому мій варіант неправильний?</button>
+
+        <div class="explain" id="explain">
+          <div class="tag" id="explainTag">Ось де помилка</div>
+          <p id="explainWhy"></p>
+          <ol>
+            <li>Запиши 32 як степінь двійки: 32 = 2<sup>5</sup>.</li>
+            <li>Основи однакові, тому прирівняй показники: <span class="nw">x + 1 = 5</span>.</li>
+            <li>Звідси x = 4. Правильна відповідь — <b>Б</b>.</li>
+          </ol>
+          <p><span class="rule">Якщо a<sup>f</sup> = a<sup>g</sup> (a &gt; 0, a ≠ 1), то f = g.</span></p>
+          <p class="topic">Тема програми НМТ: показникові рівняння</p>
+          <button class="chip" type="button" id="simplerBtn">Поясни ще простіше</button>
+          <div class="simpler" id="simpler">2<sup>5</sup> — це п'ять двійок, перемножених між собою: 2·2·2·2·2 = 32. Отже, у показнику має стояти 5, тобто x + 1 = 5. А сам x на одиницю менший — 4.</div>
+
+          <div style="margin-top:14px;font-weight:600">Пояснення допомогло?</div>
+          <div class="row">
+            <button class="chip" type="button" data-fb="yes">Так, зрозуміло</button>
+            <button class="chip" type="button" data-fb="no">Ні, не зрозуміло</button>
+          </div>
+          <div class="thanks" id="fbThanks">Дякуємо! Саме такі відповіді допомагають нам зробити пояснення кращими.</div>
+        </div>
+        <button class="reset" type="button" id="resetBtn">Спробувати ще раз</button>
+      </div>
+    </div>
+  </div>
+  </main>
+
+  <!-- 2. ПРОБЛЕМА -->
+  <section class="block" id="problem">
+    <div class="narrow">
+      <h2>Знайомо?</h2>
+      <p class="sub">Більшість тренажерів показують лише, що ти помилився. А розбиратися чому — доводиться самому.</p>
+    </div>
+    <div class="pains">
+      <div class="pain"><p class="say">«І чому саме Б?»</p><p>Сайт показує правильну літеру, а пояснення шукаєш у Google пів години — або не шукаєш взагалі й помиляєшся знову.</p></div>
+      <div class="pain"><p class="say">«Сьогодні 180, завтра 140»</p><p>Результати пробників скачуть, і незрозуміло, які саме теми просідають, а які вже можна не повторювати.</p></div>
+      <div class="pain"><p class="say">«Відкрив довідник — і спати»</p><p>Після уроків немає сил на двогодинні вебінари й товсті збірники, тому підготовка відкладається «на потім».</p></div>
+    </div>
+  </section>
+
+  <!-- 3. РІШЕННЯ -->
+  <section class="block" id="solution">
+    <div class="split">
+      <div>
+        <h2>Що ти отримаєш</h2>
+        <ul class="benefits">
+          <li><strong>Розбір твоєї помилки, а не загальна теорія</strong>Пояснення пишеться під обраний тобою варіант: що саме пішло не так і яке правило застосувати.</li>
+          <li><strong>Карта слабких тем</strong>Кожна відповідь оновлює карту за темами програми НМТ. Видно, що закрито, а що ще горить.</li>
+          <li><strong>10 хвилин замість двох годин</strong>Щоденна коротка сесія з 7–10 завдань саме з твоїх слабких тем. Можна пройти на перерві чи в транспорті.</li>
+          <li><strong>Прогноз балу за шкалою 100–200</strong>Тестові бали переводяться за офіційними таблицями відповідності, тож ти бачиш реальний орієнтир.</li>
+        </ul>
+      </div>
+      <div class="heat" aria-label="Макет карти слабких тем">
+        <h3>Карта тем · Математика</h3>
+        <p class="mock">Макет екрана застосунку</p>
+        <div class="cells">
+          <div class="cell g"><span>Відсотки</span><b>92%</b></div>
+          <div class="cell g"><span>Лінійні рівняння</span><b>88%</b></div>
+          <div class="cell y"><span>Квадратні рівняння</span><b>64%</b></div>
+          <div class="cell r"><span>Показникові рівняння</span><b>31%</b></div>
+          <div class="cell y"><span>Прогресії</span><b>57%</b></div>
+          <div class="cell r"><span>Логарифми</span><b>28%</b></div>
+          <div class="cell g"><span>Трикутники</span><b>81%</b></div>
+          <div class="cell y"><span>Тригонометрія</span><b>49%</b></div>
+          <div class="cell r"><span>Стереометрія</span><b>22%</b></div>
+          <div class="cell y"><span>Ймовірність</span><b>60%</b></div>
+        </div>
+        <div class="legend"><span><i style="background:var(--green-soft);border:1px solid var(--green)"></i>засвоєно</span><span><i style="background:#FFF6CC;border:1px solid #c9a800"></i>треба підтягнути</span><span><i style="background:var(--red-soft);border:1px solid var(--red)"></i>слабка тема</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. ДОВІРА (чесний social proof: без вигаданих відгуків і лічильників) -->
+  <section class="block" id="trust">
+    <div class="narrow">
+      <h2>Чому цьому можна довіряти</h2>
+      <p class="sub">Ми ще не запустилися, тому не показуємо вигаданих відгуків. Ось що є насправді.</p>
+    </div>
+    <div class="trust">
+      <div><strong>Завдання за офіційною програмою</strong><p>Теми та формат завдань відповідають програмам НМТ, які публікує УЦОЯО.</p></div>
+      <div><strong>Пояснення перевіряються</strong><p>AI відповідає в межах перевіреної бази правил, а під кожним поясненням є кнопка «Тут помилка».</p></div>
+      <div><strong>Без реклами</strong><p>Жодних повноекранних банерів посеред тесту — ні в безкоштовній, ні в платній версії.</p></div>
+    </div>
+  </section>
+
+  <!-- 5. ЯК ЦЕ ПРАЦЮЄ -->
+  <section class="block" id="how">
+    <h2>Як це працює</h2>
+    <p class="sub">Від встановлення до першого розбору — менше п'яти хвилин.</p>
+    <ol class="steps">
+      <li><strong>Обери предмети</strong><p>Три обов'язкові та свій четвертий. Вхід через Google чи Apple, без картки.</p></li>
+      <li><strong>Пройди експрес-тест</strong><p>5 питань — і застосунок бачить, з чого почати.</p></li>
+      <li><strong>Займайся 10 хвилин</strong><p>Щоденна сесія з твоїх слабких тем, серія днів тримає ритм.</p></li>
+      <li><strong>Розбирай кожну помилку</strong><p>Пояснення під твій варіант і повтор схожого завдання через кілька днів.</p></li>
+    </ol>
+  </section>
+
+  <!-- 6. ЦІНИ (fake door) + CTA -->
+  <section class="block" id="pricing">
+    <h2>Скільки це коштуватиме</h2>
+    <p class="sub">Обери варіант, який тобі підходить. Оплату зараз не знімаємо — застосунок ще в розробці.</p>
+    <div class="plans">
+      <div class="plan">
+        <h3>Старт</h3>
+        <div class="price">0 грн</div>
+        <div class="per">назавжди</div>
+        <ul><li>5 розборів помилок на день</li><li>Щоденна сесія 10 хвилин</li><li>Базова карта тем</li></ul>
+        <button class="btn btn-ghost" type="button" data-plan="free">Обрати «Старт»</button>
+      </div>
+      <div class="plan best">
+        <div class="flag">рекомендуємо</div>
+        <h3>Преміум</h3>
+        <div class="price">199 грн</div>
+        <div class="per">на місяць</div>
+        <ul><li>Необмежені розбори помилок</li><li>«Поясни ще простіше»</li><li>Повна карта тем і прогноз балу</li><li>3 дні безкоштовно</li></ul>
+        <button class="btn btn-main" type="button" data-plan="monthly_199">Обрати «Преміум»</button>
+      </div>
+      <div class="plan">
+        <h3>Сезон до НМТ</h3>
+        <div class="price">990 грн</div>
+        <div class="per">за 6 місяців (165 грн/міс)</div>
+        <ul><li>Усе з «Преміум»</li><li>Щотижневий звіт про прогрес на email батькам</li><li>3 дні безкоштовно</li></ul>
+        <button class="btn btn-ghost" type="button" data-plan="season_990">Обрати «Сезон»</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="join">
+    <div class="cta-final">
+      <h2>Стань одним із перших тестувальників</h2>
+      <p>Залиш email у короткій формі (30 секунд). Коли бета-версія буде готова, ми надішлемо запрошення — і ти першим спробуєш розбір помилок на своїх тестах.</p>
+      <div class="row">
+        <a class="btn btn-main" href="#" data-cta="final" data-form>Записатися в бета-тест</a>
+        <button class="btn btn-ghost" type="button" id="shareBtn">Поділитися з другом</button>
+      </div>
+      <p class="what-next">Що далі: один лист із запрошенням, без спаму. Email використовуємо лише для бета-тесту.</p>
+    </div>
+  </section>
+
+  <!-- 7. FAQ -->
+  <section class="block" id="faq">
+    <div class="narrow">
+      <h2>Питання</h2>
+      <details data-faq="tutor"><summary>Це заміна репетитора?</summary><p>Ні. Репетитор пояснює складні теми наживо. EZNMT закриває щоденну практику: розбирає кожну помилку одразу і показує, які теми варто нести репетитору чи вчителю.</p></details>
+      <details data-faq="ai_errors"><summary>А якщо AI пояснить неправильно?</summary><p>Пояснення генеруються лише в межах перевіреної бази правил за програмою НМТ. Якщо помітиш неточність — натисни «Тут помилка», і ми перевіримо вручну.</p></details>
+      <details data-faq="subjects"><summary>Які предмети будуть?</summary><p>На старті — три обов'язкові: українська мова, математика, історія України. Предмети на вибір додаватимемо за результатами бета-тесту.</p></details>
+      <details data-faq="launch"><summary>Коли запуск?</summary><p>Зараз ми перевіряємо, чи потрібен такий застосунок. Якщо цікаво — залиш email, і ти дізнаєшся першим.</p></details>
+      <details data-faq="email"><summary>Що буде з моїм email?</summary><p>Ми надішлемо запрошення в бета-тест і більше нічого. Нікому не передаємо. Відписатися можна, відповівши на лист.</p></details>
+    </div>
+  </section>
+
+  <footer>
+    EZNMT — студентський продуктовий проєкт (КПІ ім. Ігоря Сікорського). Застосунок у розробці, ціни попередні.
+  </footer>
+</div>
+
+<!-- модалка fake door -->
+<div class="modal" id="planModal" role="dialog" aria-modal="true" aria-labelledby="planTitle">
+  <div class="modal-box">
+    <h3 id="planTitle">Дякуємо за вибір!</h3>
+    <p id="planText">Застосунок ще в розробці, тому оплату ми не приймаємо. Залиш email — і отримаєш запрошення в бета-тест одним із перших.</p>
+    <div class="row">
+      <a class="btn btn-main" href="#" data-cta="plan_modal" data-form>Залишити email</a>
+      <button class="btn btn-ghost" type="button" id="closeModal">Закрити</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast">Посилання скопійовано</div>
+
+<script>
+(function(){
+  var CFG = window.EZ_CONFIG;
+  function track(name, params){
+    try{ window.gtag && gtag("event", name, params || {}); }catch(e){}
+    try{ window.clarity && clarity("event", name); }catch(e){}
+  }
+  // Зберігаємо джерело трафіку (utm_source), щоб передати його у форму
+  var qs = new URLSearchParams(location.search);
+  var src = qs.get("utm_source") || "direct";
+
+  // Кнопки, що ведуть у Google Form
+  var formHref = CFG.FORM_URL;
+  if (CFG.FORM_SOURCE_ENTRY && CFG.FORM_SOURCE_ENTRY !== "entry.0000000000") {
+    formHref += (formHref.indexOf("?") === -1 ? "?" : "&") + "usp=pp_url&" + CFG.FORM_SOURCE_ENTRY + "=" + encodeURIComponent(src);
+  }
+  document.querySelectorAll("[data-form]").forEach(function(a){
+    a.setAttribute("href", formHref);
+    a.setAttribute("target", "_blank");
+    a.setAttribute("rel", "noopener");
+    a.addEventListener("click", function(){
+      track("cta_click", { cta_location: a.getAttribute("data-cta"), traffic_source: src, transport_type: "beacon" });
+    });
+  });
+  document.querySelector('[data-cta="header"]').addEventListener("click", function(){ track("cta_click", {cta_location:"header", traffic_source: src}); });
+
+  // ---------- ДЕМО ----------
+  var WHY = {
+    "А": "Ти, ймовірно, записав 32 як 2<sup>4</sup>. Але 2<sup>4</sup> = 16, а 32 = 2<sup>5</sup>. Через це вийшло x + 1 = 4 замість x + 1 = 5.",
+    "В": "Ти правильно знайшов, що 32 = 2<sup>5</sup>, і прирівняв показники: x + 1 = 5. Але зупинився на крок раніше: 5 — це значення x + 1, а не x.",
+    "Г": "Схоже, ти поділив 32 на 2. Але x стоїть у показнику степеня, тому ділити не можна — треба порівнювати показники.",
+    "Д": "Ти відняв 1 від 32, ніби x + 1 стоїть окремо. Але x + 1 — це показник степеня, тому спершу 32 треба записати як степінь двійки.",
+    "Б": "Правильно! Ось короткий розбір, щоб закріпити, чому саме так."
+  };
+  var bubbles = document.querySelectorAll(".bubble");
+  var verdict = document.getElementById("verdict"), explain = document.getElementById("explain");
+  var oldWay = document.getElementById("oldWay"), whyBtn = document.getElementById("whyBtn");
+  var answered = false, picked = null, usedSimpler = false;
+
+  bubbles.forEach(function(b){
+    b.addEventListener("click", function(){
+      if(answered) return;
+      answered = true; picked = b.getAttribute("data-opt");
+      var correct = picked === "Б";
+      bubbles.forEach(function(x){ x.disabled = true; if(x.getAttribute("data-opt")==="Б") x.classList.add("is-right"); });
+      if(!correct) b.classList.add("picked-wrong");
+      document.getElementById("demoHint").style.display = "none";
+      verdict.classList.add("show");
+      document.getElementById("explainWhy").innerHTML = WHY[picked];
+      document.getElementById("explainTag").textContent = correct ? "Так тримати" : "Ось де помилка";
+      if(correct){ oldWay.style.display="none"; whyBtn.textContent = "Показати розбір"; }
+      track("demo_answer", { answer: picked, is_correct: correct });
+    });
+  });
+  whyBtn.addEventListener("click", function(){
+    explain.classList.add("show"); whyBtn.style.display = "none";
+    track("demo_explain_open", { answer: picked });
+  });
+  document.getElementById("simplerBtn").addEventListener("click", function(){
+    document.getElementById("simpler").classList.add("show");
+    this.style.display = "none"; usedSimpler = true;
+    track("demo_simpler_click", { answer: picked });
+  });
+  document.querySelectorAll("[data-fb]").forEach(function(c){
+    c.addEventListener("click", function(){
+      document.querySelectorAll("[data-fb]").forEach(function(x){ x.classList.remove("chosen"); x.disabled = true; });
+      c.classList.add("chosen");
+      document.getElementById("fbThanks").style.display = "block";
+      track("demo_feedback", { helpful: c.getAttribute("data-fb"), answer: picked, simpler: usedSimpler ? "yes" : "no" });
+    });
+  });
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    answered = false; picked = null; usedSimpler = false;
+    bubbles.forEach(function(x){ x.disabled=false; x.classList.remove("is-right","picked-wrong"); });
+    verdict.classList.remove("show"); explain.classList.remove("show");
+    whyBtn.style.display = ""; whyBtn.textContent = "Чому мій варіант неправильний?";
+    oldWay.style.display = ""; document.getElementById("demoHint").style.display = "";
+    document.getElementById("simpler").classList.remove("show");
+    document.getElementById("simplerBtn").style.display = "";
+    document.querySelectorAll("[data-fb]").forEach(function(x){ x.classList.remove("chosen"); x.disabled=false; });
+    document.getElementById("fbThanks").style.display = "none";
+    track("demo_reset");
+  });
+
+  // ---------- FAKE DOOR: ціни ----------
+  var modal = document.getElementById("planModal");
+  document.querySelectorAll("[data-plan]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var plan = btn.getAttribute("data-plan");
+      track("plan_select", { plan: plan, traffic_source: src });
+      document.getElementById("planText").textContent = plan === "free"
+        ? "Безкоштовний план буде доступний одразу після запуску. Залиш email — і отримаєш запрошення в бета-тест одним із перших."
+        : "Застосунок ще в розробці, тому оплату ми не приймаємо й нічого не списуємо. Залиш email — і отримаєш запрошення в бета-тест одним із перших.";
+      modal.classList.add("show");
+      modal.querySelector(".btn-main").focus();
+    });
+  });
+  function closeModal(){ modal.classList.remove("show"); }
+  document.getElementById("closeModal").addEventListener("click", closeModal);
+  modal.addEventListener("click", function(e){ if(e.target===modal) closeModal(); });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeModal(); });
+
+  // ---------- Поділитися (Growth-гіпотеза) ----------
+  document.getElementById("shareBtn").addEventListener("click", function(){
+    var url = location.origin + location.pathname + "?utm_source=share&utm_medium=friend&utm_campaign=mvp1";
+    track("share_click", { traffic_source: src });
+    var data = { title: "EZNMT", text: "Тренажер НМТ, який пояснює кожну помилку. Глянь:", url: url };
+    if(navigator.share){ navigator.share(data).catch(function(){}); }
+    else if(navigator.clipboard){
+      navigator.clipboard.writeText(url).then(function(){
+        var t=document.getElementById("toast"); t.classList.add("show"); setTimeout(function(){t.classList.remove("show")},2200);
+      });
+    }
+  });
+
+  // FAQ
+  document.querySelectorAll("details[data-faq]").forEach(function(d){
+    d.addEventListener("toggle", function(){ if(d.open) track("faq_open", { question: d.getAttribute("data-faq") }); });
+  });
+})();
+</script>
+</body>
+</html>
